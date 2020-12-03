@@ -13,11 +13,11 @@
 - The icons used for the app
 
 # Used libraries
-- PyQT5  
+- PyQt5  
 - pyaw  
 - json  
 - subprocess  
 - win32api  
 
 # Python version
-3.7.9
+Developed with: 3.7.9
