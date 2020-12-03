@@ -67,21 +67,21 @@ def mute_app():
         getWindowName()
         ui.update_song(actual_song)
         if "Advertisement" in actual_song:  #Spotify app is named as Advertisement
-            sessions = AudioUtilities.GetAllSessions()
-            for session in sessions:
-                volume = session.SimpleAudioVolume
-                volume.SetMute(1, None)
+            setMute(1)
         elif "Spotify" in actual_song:      #App named as Spotify(Only when ad plays, else it's Spotify Free)
-            sessions = AudioUtilities.GetAllSessions()
-            for session in sessions:
-                volume = session.SimpleAudioVolume
-                volume.SetMute(1, None)
+            setMute(1)
         else:
-            sessions = AudioUtilities.GetAllSessions()
-            for session in sessions:
-                volume = session.SimpleAudioVolume
-                volume.SetMute(0, None)
+            setMute(0)
 
+def setMute(state):
+    sessions = AudioUtilities.GetAllSessions()
+    for session in sessions:
+        process = session.Process
+        if process!=None:
+            if session.Process.name()==filename:
+                volume = session.SimpleAudioVolume
+                volume.SetMute(state, None)
+                return
 
 def initialConf():
     if os.path.isfile(datafilename):
