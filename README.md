@@ -1,5 +1,6 @@
 # AdMuted
  An app to silence ads when hearing music on Spotify  
+ !(https://raw.githubusercontent.com/g5fighter/AdMuted/main/iconadmuted.png)
 
 # Features
 - Mute ads while playing music  
