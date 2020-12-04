@@ -1,3 +1,5 @@
+#   Code developed by: g5fighter
+
 # -*- coding: utf-8 -*-
 
 # Form implementation generated from reading ui file 'main.ui'
@@ -27,7 +29,8 @@ open_onStart = False        # Open Spotify on start muting (it will not work for
 hide_onStart = False        # Hide window on start muting to tray
 ui = ""                     # UI element
 datafilename = ".data"      # Filename of user data
-hownd = ""                   #
+hownd = ""                  #
+isSpotifyMuted = False      # Updates de mute state of Spotify
 
 # resource_path(relative_path)
 #   gets a string "relative_path"
@@ -79,15 +82,18 @@ def getWindowName():
     else:
         winEnumHandler(hownd, None)
 
+# isAdvertisement()
+#   returns True if the app name is an Advertisement
+def isAdvertisement():
+    return "Advertisement" in actual_song or "Spotify" in actual_song
+
 # getWindowName()
 #   if "is_muting" is True checks if is an ad and calls setMute()
 def mute_app():
     if is_muting:
         getWindowName()
         ui.update_song(actual_song)
-        if "Advertisement" in actual_song:  #Spotify app is named as Advertisement
-            setMute(1)
-        elif "Spotify" in actual_song:      #App named as Spotify(Only when ad plays, else it's Spotify Free)
+        if isAdvertisement():
             setMute(1)
         else:
             setMute(0)
@@ -96,14 +102,17 @@ def mute_app():
 #   gets an int "state"
 #       searches Spotify service and mutes or unmates it
 def setMute(state):
-    sessions = AudioUtilities.GetAllSessions()
-    for session in sessions:
-        process = session.Process
-        if process!=None:
-            if session.Process.name()==filename:
-                volume = session.SimpleAudioVolume
-                volume.SetMute(state, None)
-                return
+    global isSpotifyMuted
+    if (state == 1 and not isSpotifyMuted) or (state == 0 and isSpotifyMuted):
+        sessions = AudioUtilities.GetAllSessions()
+        for session in sessions:
+            process = session.Process
+            if process!=None:
+                if session.Process.name()==filename:
+                    volume = session.SimpleAudioVolume
+                    volume.SetMute(state, None)
+                    isSpotifyMuted = state==1
+                    return
 
 # initialConf()
 #   if file "datafilename" exsits gets the info form the file and set global variables
