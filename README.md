@@ -17,7 +17,7 @@
 
 # Used libraries
 - PyQt5  
-- pyaw  
+- pycaw  
 - json  
 - subprocess  
 - win32api  
