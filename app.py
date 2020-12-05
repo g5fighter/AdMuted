@@ -112,7 +112,6 @@ def setMute(state):
                     volume = session.SimpleAudioVolume
                     volume.SetMute(state, None)
                     isSpotifyMuted = state==1
-                    return
 
 # initialConf()
 #   if file "datafilename" exsits gets the info form the file and set global variables
