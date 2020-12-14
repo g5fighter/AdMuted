@@ -108,11 +108,10 @@ def setMute(state):
         for session in sessions:
             process = session.Process
             if process!=None:
-                if session.Process.name()==filename:
+                if "Spotify" in session.Process.name():
                     volume = session.SimpleAudioVolume
                     volume.SetMute(state, None)
                     isSpotifyMuted = state==1
-
 # initialConf()
 #   if file "datafilename" exsits gets the info form the file and set global variables
 #   else creates that file and storesthe actual config
@@ -326,7 +325,7 @@ class Ui_MainWindow(object):
             ui.update_song("")         
 
     # update_checkBox()
-    #   updates chackbox gui state     
+    #   updates checkbox gui state     
     def update_checkBox(self):
         self.OpenSpotifyCheck.setChecked(open_onStart)
         self.HideAppCheck.setChecked(hide_onStart)
