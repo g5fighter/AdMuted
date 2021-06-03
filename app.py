@@ -20,7 +20,6 @@ import json
 import subprocess
 
 # Global variables
-filename = "Spotify.exe"    # Spotify exe name
 spotifyPath = ""            # Spotify path
 processpid = -1             # Spotify process pid
 actual_song = ""            # Spotify Song being reproduced
@@ -31,6 +30,7 @@ ui = ""                     # UI element
 datafilename = ".data"      # Filename of user data
 hownd = ""                  #
 isSpotifyMuted = False      # Updates de mute state of Spotify
+isHided = False
 
 # resource_path(relative_path)
 #   gets a string "relative_path"
@@ -49,7 +49,7 @@ def getSpotifyData():
         try:
             handle = win32api.OpenProcess(win32con.PROCESS_ALL_ACCESS, False, pid)
             exe = win32process.GetModuleFileNameEx(handle, 0)
-            if filename.lower() in exe.lower():
+            if "spotify.exe" in exe.lower():
                 global spotifyPath
                 spotifyPath = exe
                 global processpid
@@ -67,7 +67,7 @@ def winEnumHandler(hwnd, ctx):
         if(win32process.GetWindowThreadProcessId(hwnd)[1] == processpid):
             global actual_song
             actual_song = win32gui.GetWindowText(hwnd)
-            global hownd
+            global hownd # no setear si existe
             hownd = hwnd
             return
 
@@ -92,7 +92,8 @@ def isAdvertisement():
 def mute_app():
     if is_muting:
         getWindowName()
-        ui.update_song(actual_song)
+        if not isHided:
+            ui.update_song(actual_song)
         if isAdvertisement():
             setMute(1)
         else:
@@ -103,15 +104,16 @@ def mute_app():
 #       searches Spotify service and mutes or unmates it
 def setMute(state):
     global isSpotifyMuted
-    if (state == 1 and not isSpotifyMuted) or (state == 0 and isSpotifyMuted):
+    if (state == 1) or (state == 0 and isSpotifyMuted): # and not isSpotifyMuted
         sessions = AudioUtilities.GetAllSessions()
         for session in sessions:
             process = session.Process
             if process!=None:
-                if "Spotify" in session.Process.name():
+                if "spotify.exe" in session.Process.name().lower():
                     volume = session.SimpleAudioVolume
                     volume.SetMute(state, None)
                     isSpotifyMuted = state==1
+
 # initialConf()
 #   if file "datafilename" exsits gets the info form the file and set global variables
 #   else creates that file and storesthe actual config
@@ -272,12 +274,16 @@ class Ui_MainWindow(object):
     #   shows the window and hides the Tray icon    
     def showWindow(self):
         MainWindow.show()   
-        self.tray.hide()   
+        self.tray.hide()  
+        global isHided
+        isHided = False 
 
     # convertInTray()
     #   Creates tray and hide the main window  
     def convertInTray(self):
         MainWindow.hide()
+        global isHided
+        isHided = True
 
         # Create the tray
         self.tray = QSystemTrayIcon()
@@ -325,7 +331,7 @@ class Ui_MainWindow(object):
             ui.update_song("")         
 
     # update_checkBox()
-    #   updates checkbox gui state     
+    #   updates chackbox gui state     
     def update_checkBox(self):
         self.OpenSpotifyCheck.setChecked(open_onStart)
         self.HideAppCheck.setChecked(hide_onStart)
