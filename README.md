@@ -24,3 +24,4 @@
 
 # Python version
 Developed with: 3.7.9
+Tested in: 3.9.7
