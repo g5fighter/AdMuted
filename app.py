@@ -85,7 +85,7 @@ def getWindowName():
 # isAdvertisement()
 #   returns True if the app name is an Advertisement
 def isAdvertisement():
-    return "Advertisement" in actual_song or "Spotify" in actual_song
+    return "Advertisement" in actual_song or "Spotify" in actual_song or not " - " in actual_song 
 
 # getWindowName()
 #   if "is_muting" is True checks if is an ad and calls setMute()
