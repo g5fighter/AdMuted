@@ -21,6 +21,7 @@ import subprocess
 
 # Global variables
 spotifyPath = ""            # Spotify path
+processpid_list = []        # All spotify processes
 processpid = -1             # Spotify process pid
 actual_song = ""            # Spotify Song being reproduced
 is_muting = False           # Mute state of app
@@ -40,7 +41,7 @@ def resource_path(relative_path):
         return os.path.join(sys._MEIPASS, relative_path)
     return os.path.join(os.path.abspath("."), relative_path)
 
-# resource_path()
+# getSpotifyData()
 #   if process for "filename" exists
 #       sets "spotifyPath" and "processpid"
 def getSpotifyData():
@@ -52,23 +53,40 @@ def getSpotifyData():
             if "spotify.exe" in exe.lower():
                 global spotifyPath
                 spotifyPath = exe
+                global processpid_list
+                processpid_list.append(pid)
                 global processpid
                 processpid = pid
-                return True
         except:
             pass
-    return False
+    return len(processpid_list)!=0
 
-# resource_path(hwnd, ctx)
+# getWindowNameByHwnd(hwnd)
+#   gets the window name by a given "hwnd" and set it to "actual_song"
+def getWindowNameByHwnd(hwnd):
+    if win32gui.IsWindowVisible(hwnd):
+        window_text = win32gui.GetWindowText(hwnd)
+        if window_text == None or window_text == "":
+            return
+        global actual_song
+        actual_song = window_text
+
+# winEnumHandler(hwnd, ctx)
 #   if process is equal to "processpid"
 #       sets "actual_song" to title window name
 def winEnumHandler(hwnd, ctx):
     if win32gui.IsWindowVisible(hwnd):
-        if(win32process.GetWindowThreadProcessId(hwnd)[1] == processpid):
+        process_pid_temp = win32process.GetWindowThreadProcessId(hwnd)[1]
+        if(process_pid_temp in processpid_list):
+            window_text = win32gui.GetWindowText(hwnd)
+            if window_text == None or window_text == "":
+                return
             global actual_song
-            actual_song = win32gui.GetWindowText(hwnd)
+            actual_song = window_text
             global hownd # no setear si existe
             hownd = hwnd
+            global processpid
+            processpid = process_pid_temp
             return
 
 # getWindowName()
@@ -79,15 +97,15 @@ def winEnumHandler(hwnd, ctx):
 def getWindowName():
     if hownd == "":
         win32gui.EnumWindows(winEnumHandler, None)
-    else:
-        winEnumHandler(hownd, None)
+
+    getWindowNameByHwnd(hownd)
 
 # isAdvertisement()
 #   returns True if the app name is an Advertisement
 def isAdvertisement():
-    return "Advertisement" in actual_song or "Spotify" in actual_song or not " - " in actual_song 
+    return "Advertisement" in actual_song or "Spotify" in actual_song or (not (" - " in actual_song)) 
 
-# getWindowName()
+# mute_app()
 #   if "is_muting" is True checks if is an ad and calls setMute()
 def mute_app():
     if is_muting:
@@ -326,7 +344,7 @@ class Ui_MainWindow(object):
             if hide_onStart:
                 self.convertInTray()
         else:
-            is_muting = not is_muting
+            is_muting = False
             self.MuteButton.setText("Start Muting")   
             ui.update_song("")         
 
