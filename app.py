@@ -29,22 +29,32 @@ open_onStart = False        # Open Spotify on start muting (it will not work for
 hide_onStart = False        # Hide window on start muting to tray
 ui = ""                     # UI element
 datafilename = ".data"      # Filename of user data
-hownd = ""                  #
+hownd = ""                  # Window handle
 isSpotifyMuted = False      # Updates de mute state of Spotify
 isHided = False
 
-# resource_path(relative_path)
-#   gets a string "relative_path"
-#   returns the path of the file
+
 def resource_path(relative_path):
+    """
+    Returns the absolute path of a resource file.
+
+    Args:
+        relative_path (str): The relative path of the resource file.
+
+    Returns:
+        str: The absolute path of the resource file.
+    """
     if hasattr(sys, '_MEIPASS'):
         return os.path.join(sys._MEIPASS, relative_path)
     return os.path.join(os.path.abspath("."), relative_path)
 
-# getSpotifyData()
-#   if process for "filename" exists
-#       sets "spotifyPath" and "processpid"
 def getSpotifyData():
+    """
+    Retrieves Spotify data by enumerating all running processes and finding the process with the name "spotify.exe".
+    
+    Returns:
+        bool: True if Spotify process is found, False otherwise.
+    """
     processes = win32process.EnumProcesses() 
     for pid in processes:
         try:
@@ -61,9 +71,17 @@ def getSpotifyData():
             pass
     return len(processpid_list)!=0
 
-# getWindowNameByHwnd(hwnd)
-#   gets the window name by a given "hwnd" and set it to "actual_song"
 def getWindowNameByHwnd(hwnd):
+    """
+    Retrieves the name of the window associated with the given window handle (hwnd).
+
+    Args:
+        hwnd (int): The window handle.
+
+    Returns:
+        str: The name of the window, or None if the window is not visible or has no text.
+
+    """
     if win32gui.IsWindowVisible(hwnd):
         window_text = win32gui.GetWindowText(hwnd)
         if window_text == None or window_text == "":
@@ -71,10 +89,17 @@ def getWindowNameByHwnd(hwnd):
         global actual_song
         actual_song = window_text
 
-# winEnumHandler(hwnd, ctx)
-#   if process is equal to "processpid"
-#       sets "actual_song" to title window name
 def winEnumHandler(hwnd, ctx):
+    """
+    Callback function used for enumerating windows.
+
+    Parameters:
+    - hwnd (int): The handle to the window being enumerated.
+    - ctx (object): The context object passed to the enumeration function.
+
+    Returns:
+    None
+    """
     if win32gui.IsWindowVisible(hwnd):
         process_pid_temp = win32process.GetWindowThreadProcessId(hwnd)[1]
         if(process_pid_temp in processpid_list):
@@ -89,38 +114,57 @@ def winEnumHandler(hwnd, ctx):
             processpid = process_pid_temp
             return
 
-# getWindowName()
-#   if "hownd" is ""
-#       gets all windows and calls winEnumHandler()
-#   else
-#       gets the name of the window by "hownd"
 def getWindowName():
+    """
+    Retrieves the name of the active window.
+
+    Returns:
+        str: The name of the active window.
+    """
     if hownd == "":
         win32gui.EnumWindows(winEnumHandler, None)
 
     getWindowNameByHwnd(hownd)
 
-# isAdvertisement()
-#   returns True if the app name is an Advertisement
-def isAdvertisement():
-    return "Advertisement" in actual_song or "Spotify" in actual_song or (not (" - " in actual_song)) 
+def isAdvertisement(song_name):
+    """
+    Checks if a given song name is an advertisement.
 
-# mute_app()
-#   if "is_muting" is True checks if is an ad and calls setMute()
+    Parameters:
+    song_name (str): The name of the song.
+
+    Returns:
+    bool: True if the song is an advertisement, False otherwise.
+    """
+    return "Advertisement" in song_name or "Spotify" in song_name or (not (" - " in song_name))
+
 def mute_app():
+    """
+    Mutes or unmutes the application based on the current song being played.
+
+    If the application is currently muting, it checks if the current song is an advertisement.
+    If it is an advertisement, the application is set to mute (volume = 1).
+    If it is not an advertisement, the application is set to unmute (volume = 0).
+    """
     if is_muting:
         getWindowName()
         if not isHided:
             ui.update_song(actual_song)
-        if isAdvertisement():
+        if isAdvertisement(actual_song):
             setMute(1)
         else:
             setMute(0)
 
-# setMute(state)
-#   gets an int "state"
-#       searches Spotify service and mutes or unmates it
 def setMute(state):
+    """
+    Sets the mute state of Spotify based on the given state.
+
+    Parameters:
+    state (int): The desired mute state. 1 for mute, 0 for unmute.
+
+    Returns:
+    None
+    """
     global isSpotifyMuted
     if (state == 1) or (state == 0 and isSpotifyMuted): # and not isSpotifyMuted
         sessions = AudioUtilities.GetAllSessions()
@@ -132,10 +176,11 @@ def setMute(state):
                     volume.SetMute(state, None)
                     isSpotifyMuted = state==1
 
-# initialConf()
-#   if file "datafilename" exsits gets the info form the file and set global variables
-#   else creates that file and storesthe actual config
 def initialConf():
+    """
+    Loads initial configuration from a file if it exists, otherwise creates a new configuration file.
+    The configuration includes Spotify path, open on start setting, and hide on start setting.
+    """
     if os.path.isfile(datafilename):
         with open(datafilename) as f:
             data = json.load(f)
@@ -147,17 +192,24 @@ def initialConf():
         hide_onStart = bool(data['HideStart'])
     else:
         data = {}
-        data['SpotifyPath']= spotifyPath
-        data['OpenStart']=open_onStart
-        data['HideStart']=hide_onStart
+        data['SpotifyPath'] = spotifyPath
+        data['OpenStart'] = open_onStart
+        data['HideStart'] = hide_onStart
         with open(datafilename, 'w') as outfile:
             json.dump(data, outfile, indent=2)
     ui.update_checkBox()
 
-# writeInJson(tag, value)
-#   gets a string "tag" and a var "value"
-#   it stores in the json the value in its tag
 def writeInJson(tag, value):
+    """
+    Writes a value to a JSON file at the specified tag.
+
+    Args:
+        tag (str): The tag/key in the JSON file where the value will be written.
+        value (any): The value to be written.
+
+    Returns:
+        None
+    """
     with open(datafilename, 'r+') as f:
         data = json.load(f)
         data[tag] = value
@@ -267,38 +319,51 @@ class Ui_MainWindow(object):
         self.HideAppCheck.setText(_translate("MainWindow", "Hide app on Start Muting"))
         self.PlayingNowLabel.setText(_translate("MainWindow", "Playing now:"))
 
-        #MI CÓDIGO
+        # g5fighter: Custom listeners
         self.MuteButton.clicked.connect(self.muteButton)
         self.OpenSpotifyCheck.clicked.connect(self.open_at_start)
         self.HideAppCheck.clicked.connect(self.hide_at_start)
 
-    ##### Custom functions for the UI
+    ##### g5fighter: Custom functions for the UI
 
-    # open_at_start()
-    #   edits "open_onStart" and write it on the json
     def open_at_start(self):
+        """
+        Toggles the 'open_onStart' flag and writes the updated value to a JSON file.
+        """
         global open_onStart
         open_onStart = not open_onStart
         writeInJson('OpenStart', open_onStart)
 
-    # hide_at_start()
-    #   edits "hide_onStart" and write it on the json       
     def hide_at_start(self):
+        """
+        Toggles the hide_onStart flag and writes its value to a JSON file.
+        """
         global hide_onStart
         hide_onStart = not hide_onStart
         writeInJson('HideStart', hide_onStart)
 
-    # showWindow()
-    #   shows the window and hides the Tray icon    
     def showWindow(self):
+        """
+        Show the main window and hide the system tray icon.
+        """
         MainWindow.show()   
         self.tray.hide()  
         global isHided
-        isHided = False 
+        isHided = False
 
-    # convertInTray()
-    #   Creates tray and hide the main window  
     def convertInTray(self):
+        """
+        Converts the main window into a system tray icon.
+
+        This function hides the main window, creates a system tray icon, and sets up a menu for the tray icon.
+        The menu includes options to return to the main window and quit the application.
+
+        Parameters:
+        - None
+
+        Returns:
+        - None
+        """
         MainWindow.hide()
         global isHided
         isHided = True
@@ -321,12 +386,22 @@ class Ui_MainWindow(object):
         ##
         self.tray.setContextMenu(self.menu)
  
-    # muteButton()
-    #   changes muting state 
     def muteButton(self):
+        """
+        Toggles the mute button functionality.
+
+        If the application is not currently muting, it checks if Spotify is running and opens it if necessary.
+        If Spotify is already running, it toggles the muting state.
+        If the application is currently muting, it stops muting and updates the button text accordingly.
+
+        If the 'hide_onStart' flag is set, it converts the application into a system tray icon.
+
+        Returns:
+            None
+        """
         global is_muting
         if not is_muting:
-            if processpid==-1:
+            if processpid == -1:
                 if open_onStart:
                     try:
                         subprocess.call([spotifyPath])
@@ -337,27 +412,34 @@ class Ui_MainWindow(object):
                         self.update_song("[Error]: Cannot open Spotify please do it manually")
                         return
                 else:
-                    self.PlayingNowLabel.setText("[Error]: Spotify is not running, open it and try again")  
+                    self.PlayingNowLabel.setText("[Error]: Spotify is not running, open it and try again")
             else:
-                    is_muting = not is_muting
-                    self.MuteButton.setText("Is Muting")
+                is_muting = not is_muting
+                self.MuteButton.setText("Is Muting")
             if hide_onStart:
                 self.convertInTray()
         else:
             is_muting = False
-            self.MuteButton.setText("Start Muting")   
-            ui.update_song("")         
+            self.MuteButton.setText("Start Muting")
+            ui.update_song("")
 
-    # update_checkBox()
-    #   updates chackbox gui state     
     def update_checkBox(self):
+        """
+        Updates the state of the checkboxes based on the values of `open_onStart` and `hide_onStart`.
+        """
         self.OpenSpotifyCheck.setChecked(open_onStart)
         self.HideAppCheck.setChecked(hide_onStart)
 
-    # update_song(song)
-    #   get a string "song"
-    #   changes playing song label     
     def update_song(self, song):
+        """
+        Updates the playing song label with the given song.
+
+        Parameters:
+        - song: The song to be displayed in the label.
+
+        Returns:
+        - None
+        """
         self.PlayingNowLabel.setText("Playing now: "+song)
 
 
@@ -368,11 +450,11 @@ if __name__ == "__main__":
     ui = Ui_MainWindow()
     ui.setupUi(MainWindow)
     MainWindow.show()
-    ## Custom functions ##
+    ## START: Custom functions ##
     getSpotifyData()
     initialConf()
     timer = QTimer()
     timer.timeout.connect(mute_app)
     timer.start(1000)
-    ## Custom functions ##
+    ## END: Custom functions ##
     sys.exit(app.exec_())
